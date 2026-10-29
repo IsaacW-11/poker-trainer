@@ -32,3 +32,24 @@ def num_to_card(num: int) -> str:
     card = RANKS[card_rank] + SUITS[card_suit]
 
     return card
+
+def parse_hand(hand: str) -> list[int]:
+    if not isinstance(hand, str):
+        raise TypeError("Invalid type")
+
+    sanitized_text = "".join(hand.split()) # removes whitespace
+
+    if not len(sanitized_text) % 2 == 0:
+        raise ValueError("Not correct length. At least 1 card was not complete")
+
+
+    card_list = re.findall(r".{2}", sanitized_text)
+    card_num_list = []
+
+    for card in card_list:
+        card_num_list.append(card_to_num(card))
+
+    if len(card_num_list) != len(set(card_num_list)):
+        raise ValueError("Duplicate cards")
+
+    return card_num_list

@@ -1,6 +1,6 @@
 import pytest
 
-from trainer.cards import card_to_num, num_to_card
+from trainer.cards import card_to_num, num_to_card, parse_hand
 from trainer.constants import RANKS, SUITS
 
 # tests for card_to_num / num_to_card
@@ -92,4 +92,71 @@ def test_num_to_card_rejects_bool(value):
     with pytest.raises(TypeError):
         num_to_card(value)
 
-#
+# tests for parse_hand
+# accepts any even number string (representing any number of cards)
+
+@pytest.mark.parametrize("text, expected", [
+    ("Ah", [50]),
+    ("AhKs", [50, 47]),
+    ("2c7hJcAs", [0, 22, 36, 51]),
+    ("AhKdQcJsTh", [50, 45, 40, 39, 34])
+])
+def test_parse_hand_basic(text, expected):
+    assert parse_hand(text) == expected
+
+def test_parse_hand_seven_cards():
+    cards = parse_hand("AhKd7c2s9hTdJc")
+    assert len(cards) == 7
+    assert [num_to_card(c) for c in cards] == ["Ah", "Kd", "7c", "2s", "9h", "Td", "Jc"]
+
+def test_parse_hand_case_insensitive():
+    assert parse_hand("ahkd") == parse_hand("AhKd")
+
+@pytest.mark.parametrize("text", [
+    "AhKd",
+    "Ah Kd",
+    " Ah Kd ",
+    "Ah  Kd",
+    "Ah\nKd",
+    "\nAhKd\n",
+    "\tAh\tKd\t",
+    "A h K d",
+    "A\nhK d",
+    "  ah   kd\n",
+])
+def test_parse_hand_ignores_whitespace(text):
+    assert parse_hand(text) == [50, 45]
+
+@pytest.mark.parametrize("text", ["", " ", "\n", "  \t\n "])
+def test_parse_hand_empty_returns_empty_list(text):
+    assert parse_hand(text) == []
+
+@pytest.mark.parametrize("text", [
+    "A",
+    "AhK",
+    "Ah Kd 7",
+    "AhXd",
+    "AhKz",
+    "1cAh",
+    "10hAs",
+    "Ah,Kd",
+    "hAKd",
+])
+def test_parse_hand_invalid(text):
+    with pytest.raises(ValueError):
+        parse_hand(text)
+
+@pytest.mark.parametrize("text", [
+    "AhAh",
+    "Ah ah",
+    "AhKd7cAh",
+    "2c 3c 4c 2c",
+])
+def test_parse_hand_rejects_duplicates(text):
+    with pytest.raises(ValueError):
+        parse_hand(text)
+
+@pytest.mark.parametrize("value", [None, 50, ["Ah", "Kd"], ("Ah",)])
+def test_parse_hand_invalid_type(value):
+    with pytest.raises(TypeError):
+        parse_hand(value)
